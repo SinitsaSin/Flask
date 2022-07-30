@@ -1,28 +1,31 @@
-from flask import Flask, render_template
-from webargs.flaskparser import use_kwargs
-from webargs import fields
-from utils import lookup
+import sqlite3
+from flask import Flask, render_template, redirect
 
 app = Flask(__name__)
 
 TEMPLATES_AUTO_RELOAD = True
 
+connection = sqlite3.connect('example.db')
+
+
+def get_db_connection():
+    db = sqlite3.connect('example.db')
+    db.row_factory = sqlite3.Row
+    return db
+
 
 @app.route("/")
 def index():
-    return render_template('index.html')
+    return redirect("/unique_name")
 
 
-@app.route("/rates")
-@use_kwargs(
-    {
-        'currency': fields.Str(required=True)
-    },
-    location='query'
-)
-def rates(currency):
-    quote = lookup(currency)
-    return render_template('rates.html', quote=quote)
+@app.route("/unique_name")
+def get_unique_name():
+    db = get_db_connection()
+
+    rows = db.execute("SELECT FirstName FROM customers GROUP BY FirstName")     # DISTINCT is also an option
+
+    return render_template('name.html', rows=rows)
 
 
 if __name__ == "__main__":
